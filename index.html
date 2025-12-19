@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Visitor Tracking Test Website</title>
+</head>
+<body>
+
+    <h1>Welcome to Visitor Tracking Demo</h1>
+    <p>
+        This is a test website.  
+        Stay on this page for 20–30 seconds, then close the tab.
+    </p>
+
+    <!-- 🔽 VISITOR TRACKING SCRIPT (DO NOT CHANGE) -->
+    <script>
+        let visitId = null;
+
+        // When page loads → start tracking
+        fetch("https://visitor-tracker-4dcw.onrender.com/track/start", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                page: window.location.href
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            visitId = data.visit_id;
+        });
+
+        // When page closes → stop tracking
+        window.addEventListener("beforeunload", function () {
+            if (visitId) {
+                navigator.sendBeacon(
+                    "https://visitor-tracker-4dcw.onrender.com/track/end",
+                    JSON.stringify({ visit_id: visitId })
+                );
+            }
+        });
+    </script>
+    <!-- 🔼 VISITOR TRACKING SCRIPT END -->
+
+</body>
+</html>
