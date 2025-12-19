@@ -13,63 +13,42 @@
     </p>
 
     <!-- 🔽 VISITOR TRACKING WITH LOCATION (ACCURATE & CONSENT-BASED) -->
-    <script>
-        let visitId = null;
+   <script>
+let visitId = null;
 
-        // Ask user for location permission
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                // User ALLOWED location
-                fetch("https://visitor-tracker-4dcw.onrender.com/track/start", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        page: window.location.href,
-                        lat: pos.coords.latitude,
-                        lon: pos.coords.longitude
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    visitId = data.visit_id;
-                });
-            },
-            () => {
-                // User DENIED location
-                console.log("Location permission denied");
+if ("geolocation" in navigator) {
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      fetch("https://visitor-tracker-4dcw.onrender.com/track/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          page: window.location.href,
+          lat: position.coords.latitude,
+          lon: position.coords.longitude
+        })
+      })
+      .then(res => res.json())
+      .then(data => visitId = data.visit_id);
+    },
+    (error) => {
+      console.log("Location denied");
+    }
+  );
+}
 
-                // Still track visit WITHOUT location
-                fetch("https://visitor-tracker-4dcw.onrender.com/track/start", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        page: window.location.href
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    visitId = data.visit_id;
-                });
-            }
-        );
+window.addEventListener("beforeunload", () => {
+  if (visitId) {
+    navigator.sendBeacon(
+      "https://visitor-tracker-4dcw.onrender.com/track/end",
+      JSON.stringify({ visit_id: visitId })
+    );
+  }
+});
+</script>
 
-        // When page closes → stop tracking
-        window.addEventListener("beforeunload", function () {
-            if (visitId) {
-                navigator.sendBeacon(
-                    "https://visitor-tracker-4dcw.onrender.com/track/end",
-                    JSON.stringify({ visit_id: visitId })
-                );
-            }
-        });
-    </script>
-    <!-- 🔼 VISITOR TRACKING SCRIPT END -->
 
-</body>
-</html>
+
+
 
 
