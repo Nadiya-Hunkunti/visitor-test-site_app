@@ -12,24 +12,50 @@
         Stay on this page for 20–30 seconds, then close the tab.
     </p>
 
-    <!-- 🔽 VISITOR TRACKING SCRIPT (DO NOT CHANGE) -->
+    <!-- 🔽 VISITOR TRACKING WITH LOCATION (ACCURATE & CONSENT-BASED) -->
     <script>
         let visitId = null;
 
-        // When page loads → start tracking
-        fetch("https://visitor-tracker-4dcw.onrender.com/track/start", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
+        // Ask user for location permission
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                // User ALLOWED location
+                fetch("https://visitor-tracker-4dcw.onrender.com/track/start", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        page: window.location.href,
+                        lat: pos.coords.latitude,
+                        lon: pos.coords.longitude
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    visitId = data.visit_id;
+                });
             },
-            body: JSON.stringify({
-                page: window.location.href
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            visitId = data.visit_id;
-        });
+            () => {
+                // User DENIED location
+                console.log("Location permission denied");
+
+                // Still track visit WITHOUT location
+                fetch("https://visitor-tracker-4dcw.onrender.com/track/start", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        page: window.location.href
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    visitId = data.visit_id;
+                });
+            }
+        );
 
         // When page closes → stop tracking
         window.addEventListener("beforeunload", function () {
@@ -45,3 +71,5 @@
 
 </body>
 </html>
+
+
