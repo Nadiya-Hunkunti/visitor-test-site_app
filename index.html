@@ -1,45 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Visitor Tracking Test Website</title>
+</head>
+<body>
+
+<h1>Welcome to Visitor Tracking Demo</h1>
+<p>
+    Stay on this page for 20–30 seconds, then close the tab.
+</p>
+
 <script>
 let visitId = null;
 
+/* -------------------------------
+   START VISIT
+-------------------------------- */
 function startTracking(lat = null, lon = null) {
-  fetch("https://visitor-tracker-4dcw.onrender.com/track/start", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      page: window.location.href,
-      lat: lat,
-      lon: lon
+    fetch("https://visitor-tracker-4dcw.onrender.com/track/start", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            page: window.location.href,
+            lat: lat,
+            lon: lon
+        })
     })
-  })
-  .then(res => res.json())
-  .then(data => visitId = data.visit_id);
+    .then(res => res.json())
+    .then(data => {
+        visitId = data.visit_id;
+        console.log("Visit started:", visitId);
+    })
+    .catch(err => console.error("Start error", err));
 }
 
-// Ask for location
+// Ask for location (optional)
 if ("geolocation" in navigator) {
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      startTracking(
-        position.coords.latitude,
-        position.coords.longitude
-      );
-    },
-    () => {
-      // Location denied → still track visit
-      startTracking();
-    }
-  );
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            startTracking(pos.coords.latitude, pos.coords.longitude);
+        },
+        () => {
+            // Location denied → still track visit
+            startTracking();
+        }
+    );
 } else {
-  startTracking();
+    startTracking();
 }
 
-// 🔑 RELIABLE END TRACKING
+/* -------------------------------
+   END VISIT (RELIABLE)
+-------------------------------- */
 document.addEventListener("visibilitychange", function () {
-  if (document.visibilityState === "hidden" && visitId) {
-    navigator.sendBeacon(
-      "https://visitor-tracker-4dcw.onrender.com/track/end",
-      JSON.stringify({ visit_id: visitId })
-    );
-  }
+    if (document.visibilityState === "hidden" && visitId) {
+        fetch("https://visitor-tracker-4dcw.onrender.com/track/end", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                visit_id: visitId
+            }),
+            keepalive: true   // 🔑 CRITICAL
+        })
+        .then(() => console.log("Visit ended:", visitId))
+        .catch(err => console.error("End error", err));
+    }
 });
 </script>
+
+</body>
+</html>
