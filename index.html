@@ -1,44 +1,41 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Visitor Tracking Test Website</title>
-</head>
-<body>
-
-    <h1>Welcome to Visitor Tracking Demo</h1>
-    <p>
-        This is a test website.  
-        Stay on this page for 20–30 seconds, then close the tab.
-    </p>
-
-    <!-- 🔽 VISITOR TRACKING WITH LOCATION (ACCURATE & CONSENT-BASED) -->
-   <script>
+<script>
 let visitId = null;
 
+function startTracking(lat = null, lon = null) {
+  fetch("https://visitor-tracker-4dcw.onrender.com/track/start", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      page: window.location.href,
+      lat: lat,
+      lon: lon
+    })
+  })
+  .then(res => res.json())
+  .then(data => visitId = data.visit_id);
+}
+
+// Ask for location
 if ("geolocation" in navigator) {
   navigator.geolocation.getCurrentPosition(
     (position) => {
-      fetch("https://visitor-tracker-4dcw.onrender.com/track/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          page: window.location.href,
-          lat: position.coords.latitude,
-          lon: position.coords.longitude
-        })
-      })
-      .then(res => res.json())
-      .then(data => visitId = data.visit_id);
+      startTracking(
+        position.coords.latitude,
+        position.coords.longitude
+      );
     },
-    (error) => {
-      console.log("Location denied");
+    () => {
+      // Location denied → still track visit
+      startTracking();
     }
   );
+} else {
+  startTracking();
 }
 
-window.addEventListener("beforeunload", () => {
-  if (visitId) {
+// 🔑 RELIABLE END TRACKING
+document.addEventListener("visibilitychange", function () {
+  if (document.visibilityState === "hidden" && visitId) {
     navigator.sendBeacon(
       "https://visitor-tracker-4dcw.onrender.com/track/end",
       JSON.stringify({ visit_id: visitId })
@@ -46,9 +43,3 @@ window.addEventListener("beforeunload", () => {
   }
 });
 </script>
-
-
-
-
-
-
